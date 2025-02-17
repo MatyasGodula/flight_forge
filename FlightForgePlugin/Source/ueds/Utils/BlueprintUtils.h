@@ -20,7 +20,7 @@ struct FGateData
 };
 
 USTRUCT(BlueprintType)
-struct FGatePosition
+struct FObjectPosition
 {
 	GENERATED_BODY()
 
@@ -35,7 +35,7 @@ struct FGatePosition
 };
 
 USTRUCT(BlueprintType)
-struct FGateOrientation
+struct FObjectOrientation
 {
 	GENERATED_BODY()
 
@@ -50,15 +50,18 @@ struct FGateOrientation
 };
 
 USTRUCT(BlueprintType)
-struct FGateDataYaml
+struct FObjectDataYaml
 {
 	GENERATED_BODY()
 
 	UPROPERTY(BlueprintReadWrite)
-	FGatePosition Position;
+	FString Name;
 
 	UPROPERTY(BlueprintReadWrite)
-	FGateOrientation Orientation;
+	FObjectPosition Position;
+
+	UPROPERTY(BlueprintReadWrite)
+	FObjectOrientation Orientation;
 };
 
 
@@ -75,7 +78,7 @@ public:
 	static void ReadYamlFromFile(const FString& FilePath);
 
 	UFUNCTION(BlueprintCallable, Category="Yaml")
-	static void ReadGatesTransformFromYaml(const FString& FilePath, TArray<FGateDataYaml>& OutGatesData);
+	static void ReadObjectsTransformFromYaml(const FString& FilePath, TArray<FObjectDataYaml>& OutGatesData);
 
 	UFUNCTION(BlueprintCallable, Category="Coordinates")
 	static void TransformToUECoord(const FVector& RightHandLocation, const FVector& RightHandOrientation, const FVector& WorldOrigin, FTransform& Out_UETransform);

@@ -29,25 +29,27 @@ void ASpawningObjectManager::BeginPlay()
 	
 	FVector WorldOrigin = GameMode->GetWorldOrigin();
 	
-	TArray<FGateDataYaml> GatesTransform;
-	UBlueprintUtils::ReadGatesTransformFromYaml(GatesYamlConfigPath, GatesTransform);
+	TArray<FObjectDataYaml> ObjectsTransform;
+	UBlueprintUtils::ReadObjectsTransformFromYaml(ObjectsYamlConfigPath, ObjectsTransform);
 
 	int32 StencilValue = 10;
-	for (auto Gate : GatesTransform)
+	for (auto Object : ObjectsTransform)
 	{
-		FVector Location = FVector(Gate.Position.X, Gate.Position.Y, Gate.Position.Z + 0.1);
-		FVector Orientation = FVector(Gate.Orientation.Roll, Gate.Orientation.Pitch, Gate.Orientation.Yaw);
+		FVector Location = FVector(Object.Position.X, Object.Position.Y, Object.Position.Z + 0.1);
+		FVector Orientation = FVector(Object.Orientation.Roll, Object.Orientation.Pitch, Object.Orientation.Yaw);
 		
 		FTransform TransformUE;
 		UBlueprintUtils::TransformToUECoord(Location, Orientation, WorldOrigin, TransformUE);
 
-		FString SlimGateName = "BP_a2rl_gate_slim";
+		FString ObjectName = Object.Name;
+
+		/*FString SlimGateName = "BP_a2rl_gate_slim";
 		if(Gate.Position.Z > 1.35)
 		{
 			SlimGateName = "BP_a2rl_gate_slim_core";
-		}
+		}*/
 		
-		this->SpawnActorByName(SlimGateName, FullPathToActorsFolder_, TransformUE, StencilValue++);
+		this->SpawnActorByName(ObjectName, FullPathToActorsFolder_, TransformUE, StencilValue++);
 	}
 	
 }
@@ -61,9 +63,15 @@ void ASpawningObjectManager::Tick(float DeltaTime)
 void ASpawningObjectManager::SpawnActorByName(const FString& NameOfActor, const FString& FullPathToActorsFolder,
                                                              const FTransform& Transform, int32 StencilValue)
 {
-	FString FullPatchToActor = FullPathToActorsFolder + NameOfActor + "." + NameOfActor + "_C";
+	FString FullPathToActor = FullPathToActorsFolder + NameOfActor + "." + NameOfActor + "_C";
 
-	if (UClass* ActorClass = StaticLoadClass(AActor::StaticClass(), nullptr, *FullPatchToActor))
+	/*
+	UE does allow for finding objects already loaded in memory using StaticFindObject might incorporate later
+	link: https://dev.epicgames.com/documentation/en-us/unreal-engine/API/Runtime/CoreUObject/UObject/StaticFindObject?application_version=5.5
+	alternatively: https://dev.epicgames.com/documentation/en-us/unreal-engine/API/Runtime/CoreUObject/UObject/StaticFindObjectFast
+	*/
+
+	if (UClass* ActorClass = StaticLoadClass(AActor::StaticClass(), nullptr, *FullPathToActor))
 	{
 		AActor* Actor = GetWorld()->SpawnActor<AActor>(ActorClass, Transform);
 		UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(Actor->GetRootComponent());
@@ -71,7 +79,7 @@ void ASpawningObjectManager::SpawnActorByName(const FString& NameOfActor, const 
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Failed to find class: %s"), *FullPatchToActor);
+		UE_LOG(LogTemp, Warning, TEXT("Failed to find class: %s"), *FullPathToActor);
 	}
 }
 

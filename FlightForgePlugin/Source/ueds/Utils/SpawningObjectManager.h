@@ -19,7 +19,7 @@ public:
 	ASpawningObjectManager();
 
 	
-	FString GatesYamlConfigPath = "gate_config_abu_january_full.yaml";
+	FString ObjectsYamlConfigPath = "gate_config_abu_january_full.yaml";
 	
 	FString FullPathToActorsFolder_ = "/Game/Blueprints/";
 

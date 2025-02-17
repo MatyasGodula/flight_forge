@@ -74,7 +74,7 @@ void UBlueprintUtils::ReadYamlFromFile(const FString& FilePath)
 	UE_LOG(LogTemp, Log, TEXT("%d"), Answer);
 }
 
-void UBlueprintUtils::ReadGatesTransformFromYaml(const FString& FilePath, TArray<FGateDataYaml>& OutGatesData)
+void UBlueprintUtils::ReadObjectsTransformFromYaml(const FString& FilePath, TArray<FObjectDataYaml>& OutObjectsData)
 {
 	FString FullPath = FPaths::ProjectContentDir() + FilePath;
 
@@ -89,26 +89,87 @@ void UBlueprintUtils::ReadGatesTransformFromYaml(const FString& FilePath, TArray
 	{
 		YAML::Node RootNode = YAML::Load(TCHAR_TO_UTF8(*FileContent));
 
-		if (RootNode["gates"])
+		if (RootNode["objects"])
 		{
-			for (const auto& GateNode : RootNode["gates"])
+			for (const auto& ObjectNode : RootNode["objects"])
 			{
-				FGateDataYaml Gate;
-				Gate.Position.X = GateNode["position"]["x"].as<float>();
-				Gate.Position.Y = GateNode["position"]["y"].as<float>();
-				Gate.Position.Z = GateNode["position"]["z"].as<float>();
+				bool ReadSuccess = true;
+				FObjectDataYaml Object;
+				YAML::Node nameNode = ObjectNode["name"];
+				if (nameNode && nameNode.IsDefined()) 
+				{
+					// yaml-cpp does not natively support reading as FString directly, therefore we need to convert std::string to FString
+					Object.Name = UTF8_TO_TCHAR(nameNode.as<std::string>().c_str());
+				} 
+				else 
+				{
+					ReadSuccess = false;
+					UE_LOG(LogTemp, Warning, TEXT("Name key not found in YAML."));
+				}
 
-				Gate.Orientation.Roll = GateNode["orientation"]["roll"].as<float>();
-				Gate.Orientation.Pitch = GateNode["orientation"]["pitch"].as<float>();
-				Gate.Orientation.Yaw = GateNode["orientation"]["yaw"].as<float>();
+				YAML::Node positionNode = ObjectNode["position"];
+                if (positionNode && positionNode.IsDefined())
+                {
+                    YAML::Node posX = positionNode["x"];
+                    YAML::Node posY = positionNode["y"];
+                    YAML::Node posZ = positionNode["z"];
+                    if (posX && posY && posZ && posX.IsDefined() && posY.IsDefined() && posZ.IsDefined())
+                    {
+                        Object.Position.X = posX.as<float>();
+                        Object.Position.Y = posY.as<float>();
+                        Object.Position.Z = posZ.as<float>();
+                    }
+                    else
+                    {
+                        ReadSuccess = false;
+                        UE_LOG(LogTemp, Warning, TEXT("Incomplete position data in YAML for an object"));
+                    }
+                }
+                else
+                {
+                    ReadSuccess = false;
+                    UE_LOG(LogTemp, Warning, TEXT("Position key not found in YAML for one of the gates."));
+                }
+
+                YAML::Node orientationNode = ObjectNode["orientation"];
+                if (orientationNode && orientationNode.IsDefined())
+                {
+                    YAML::Node rollNode = orientationNode["roll"];
+                    YAML::Node pitchNode = orientationNode["pitch"];
+                    YAML::Node yawNode = orientationNode["yaw"];
+                    if (rollNode && pitchNode && yawNode && rollNode.IsDefined() && pitchNode.IsDefined() && yawNode.IsDefined())
+                    {
+                        Object.Orientation.Roll = rollNode.as<float>();
+                        Object.Orientation.Pitch = pitchNode.as<float>();
+                        Object.Orientation.Yaw = yawNode.as<float>();
+                    }
+                    else
+                    {
+                        ReadSuccess = false;
+                        UE_LOG(LogTemp, Warning, TEXT("Incomplete orientation data in YAML for an object"));
+                    }
+                }
+                else
+                {
+                    ReadSuccess = false;
+                    UE_LOG(LogTemp, Warning, TEXT("Orientation key not found in YAML for one of the gates."));
+                }
 
 				// UE_LOG(LogTemp, Warning, TEXT("Loaded position:  [%lf,%lf,%lf] Orientation: [%lf,%lf,%lf]"),
-				// 	Gate.Position.X,Gate.Position.Y,Gate.Position.Z, Gate.Orientation.Roll, Gate.Orientation.Pitch, Gate.Orientation.Yaw);
+				// 	Object.Position.X,Object.Position.Y,Object.Position.Z, Object.Orientation.Roll, Object.Orientation.Pitch, Object.Orientation.Yaw);
 
-				OutGatesData.Add(Gate);
-			}
+                if (ReadSuccess)
+                {
+                    OutObjectsData.Add(Object);
+                }
+                else
+                {
+                    UE_LOG(LogTemp, Warning, TEXT("Skipping invalid gate data for an object"));
+                }
 
-			UE_LOG(LogTemp, Log, TEXT("Successfully loaded %d gates"), OutGatesData.Num());
+			} // for (const auto& ObjectNode : RootNode["gates"])
+
+			UE_LOG(LogTemp, Log, TEXT("Successfully loaded %d gates"), OutObjectsData.Num());
 		}
 		else
 		{
